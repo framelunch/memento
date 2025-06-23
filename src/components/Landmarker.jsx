@@ -2,6 +2,7 @@ import vision from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3'
 import { useState } from 'react';
 import { useRef } from 'react';
 import { useEffect } from 'react';
+import FaceMeshViewer from './FaceMeshViewer';
 const { FaceLandmarker, FilesetResolver, DrawingUtils } = vision;
 
 export default function Landmarker() {
@@ -9,6 +10,7 @@ export default function Landmarker() {
   const canvasRef = useRef();
 
   const [faceBlendShapes, setFaceBlendShapes] = useState([]);
+  const [landmarks, setLandmarks] = useState([]);
   const [isGuide, setIsGuide] = useState(true);
 
   let isDetect = false;
@@ -22,6 +24,7 @@ export default function Landmarker() {
     const ctx = canvasRef.current.getContext('2d');
     const drawingUtils = new DrawingUtils(ctx);
     for (const landmarks of faceLandmarkerResult.faceLandmarks) {
+      setLandmarks(landmarks);
       // シェーダー
       drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_TESSELATION, {
         color: '#C0C0C070',
@@ -87,6 +90,7 @@ export default function Landmarker() {
         outputFaceBlendshapes: true,
         numFaces: 1,
       });
+
       detect();
       isDetect = true;
     })();
@@ -100,12 +104,17 @@ export default function Landmarker() {
             <img src={`/image1.jpg`} ref={imageRef} />
             <canvas
               ref={canvasRef}
-              className={`absolute z-10 pointer-events-none w-full h-full top-0 left-0 ${!isGuide && 'hidden'} `}
+              className={`absolute z-10 pointer-events-none w-full h-full top-0 left-0 ${isGuide ? '' : 'hidden'} `}
             ></canvas>
           </div>
           <button className="mt-4" onClick={handleGuide}>
             ガイド表示／非表示
           </button>
+          {imageRef.current && landmarks.length && (
+            <div className="h-[50vh]">
+              <FaceMeshViewer landmarks={landmarks} textureImg={imageRef.current} />
+            </div>
+          )}
         </div>
         <div className="w-1/2">
           <table className="w-full">
