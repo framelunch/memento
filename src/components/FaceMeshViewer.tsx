@@ -19,9 +19,11 @@ export default function FaceMeshViewer({
     const positions = new Float32Array(landmarks.length * 3);
     const uvs = new Float32Array(landmarks.length * 2);
 
+    const aspect = textureImg.naturalWidth / textureImg.naturalHeight; // アスペクト比
+
     for (let i = 0; i < landmarks.length; i++) {
       const { x, y, z } = landmarks[i];
-      positions[i * 3 + 0] = (x - 0.5) * -1; // Flip horizontally
+      positions[i * 3 + 0] = (x - 0.5) * aspect * -1;
       positions[i * 3 + 1] = -(y - 0.5);
       positions[i * 3 + 2] = -z;
 
