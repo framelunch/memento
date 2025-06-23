@@ -3,6 +3,7 @@ import React, { useMemo } from 'react';
 import { Canvas } from '@react-three/fiber';
 import * as THREE from 'three';
 import { FACEMESH_TRIANGLES } from '../../data/facemesh_triangles';
+import { useEffect } from 'react';
 
 // Props: landmarksとtextureImgは親コンポーネントから渡す
 export default function FaceMeshViewer({
@@ -20,12 +21,13 @@ export default function FaceMeshViewer({
     const uvs = new Float32Array(landmarks.length * 2);
 
     const aspect = textureImg.naturalWidth / textureImg.naturalHeight; // アスペクト比
+    const scale = 1.0;
 
     for (let i = 0; i < landmarks.length; i++) {
       const { x, y, z } = landmarks[i];
-      positions[i * 3 + 0] = (x - 0.5) * aspect * -1;
-      positions[i * 3 + 1] = -(y - 0.5);
-      positions[i * 3 + 2] = -z;
+      positions[i * 3 + 0] = (x - 0.5) * scale * aspect * -1;
+      positions[i * 3 + 1] = -(y - 0.5) * scale;
+      positions[i * 3 + 2] = -z * scale;
 
       // UV（そのまま x, y を使う）
       uvs[i * 2 + 0] = x;
@@ -55,6 +57,13 @@ export default function FaceMeshViewer({
       return tex;
     }
   }, [textureImg]);
+
+  useEffect(() => {
+    return () => {
+      geometry.dispose();
+      texture.dispose?.();
+    };
+  }, []);
 
   return (
     <Canvas camera={{ position: [0, 0, 0.8], fov: 45 }}>

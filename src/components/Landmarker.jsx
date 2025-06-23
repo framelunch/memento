@@ -1,5 +1,5 @@
 import vision from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useRef } from 'react';
 import { useEffect } from 'react';
 import FaceMeshViewer from './FaceMeshViewer';
@@ -9,15 +9,15 @@ export default function Landmarker() {
   const imageRef = useRef();
   const canvasRef = useRef();
 
+  const [imageUrl, setImageUrl] = useState(null);
+
   const [faceBlendShapes, setFaceBlendShapes] = useState([]);
   const [landmarks, setLandmarks] = useState([]);
   const [isGuide, setIsGuide] = useState(true);
 
-  let isDetect = false;
   let faceLandmarker;
 
   const detect = () => {
-    if (isDetect) return;
     const faceLandmarkerResult = faceLandmarker.detect(imageRef.current);
     setFaceBlendShapes(faceLandmarkerResult.faceBlendshapes[0].categories);
 
@@ -74,46 +74,93 @@ export default function Landmarker() {
   };
 
   const handleGuide = () => {
-    setIsGuide(!isGuide);
+    setIsGuide((prev) => {
+      const newState = !prev;
+      console.log(prev);
+      if (canvasRef.current) {
+        canvasRef.current.style.display = newState ? 'block' : 'none';
+      }
+      return newState;
+    });
   };
 
-  useEffect(() => {
-    void (async () => {
-      const filesetResolver = await FilesetResolver.forVisionTasks(
-        'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm'
-      );
-      faceLandmarker = await FaceLandmarker.createFromOptions(filesetResolver, {
-        baseOptions: {
-          modelAssetPath: `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task`,
-          delegate: 'GPU',
-        },
-        outputFaceBlendshapes: true,
-        numFaces: 1,
-      });
+  const handleLoadImage = async () => {
+    if (canvasRef.current) {
+      canvasRef.current.remove();
+    }
 
-      detect();
-      isDetect = true;
-    })();
-  }, []);
+    const img = imageRef.current;
+    if (!img) return;
+    const canvas = document.createElement('canvas');
+    canvas.setAttribute('width', imageRef.current.width + 'px');
+    canvas.setAttribute('height', imageRef.current.height + 'px');
+    canvas.style.position = 'absolute';
+    canvas.style.top = '0';
+    canvas.style.left = '0';
+    canvas.style.width = `${imageRef.current.width}px`;
+    canvas.style.height = `${imageRef.current.height}px`;
+    canvas.style.zIndex = '10';
+    canvas.style.pointerEvents = 'none';
+    canvas.style.display = isGuide ? 'block' : 'none';
+
+    imageRef.current.parentElement.appendChild(canvas);
+    canvasRef.current = canvas;
+
+    landmarker();
+  };
+
+  const handleSelectImage = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        setImageUrl(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const landmarker = async () => {
+    const filesetResolver = await FilesetResolver.forVisionTasks(
+      'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm'
+    );
+    faceLandmarker = await FaceLandmarker.createFromOptions(filesetResolver, {
+      baseOptions: {
+        modelAssetPath: `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task`,
+        delegate: 'GPU',
+      },
+      outputFaceBlendshapes: true,
+      numFaces: 1,
+    });
+
+    detect();
+  };
 
   return (
     <>
       <div className="flex items-start">
         <div className="w-1/2 sticky top-0">
+          <input className="w-1/2" type="file" onChange={handleSelectImage} />
           <div className="relative">
-            <img src={`/image1.jpg`} ref={imageRef} />
-            <canvas
-              ref={canvasRef}
-              className={`absolute z-10 pointer-events-none w-full h-full top-0 left-0 ${isGuide ? '' : 'hidden'} `}
-            ></canvas>
+            <img src={imageUrl} ref={imageRef} onLoad={handleLoadImage} />
           </div>
-          <button className="mt-4" onClick={handleGuide}>
-            ガイド表示／非表示
-          </button>
-          {imageRef.current && landmarks.length && (
+          <div className="mt-4 flex items-center justify-center gap-4">
+            {imageRef.current && (
+              <button className="w-1/2" onClick={handleGuide}>
+                ガイド表示／非表示
+              </button>
+            )}
+          </div>
+          {imageRef.current && landmarks.length ? (
             <div className="h-[50vh]">
-              <FaceMeshViewer landmarks={landmarks} textureImg={imageRef.current} />
+              <FaceMeshViewer
+                key={imageRef.current.src} // 再マウント
+                landmarks={landmarks}
+                textureImg={imageRef.current}
+              />
             </div>
+          ) : (
+            ''
           )}
         </div>
         <div className="w-1/2">
