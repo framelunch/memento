@@ -1,18 +1,24 @@
 // ファイル: FaceMeshViewer.tsx
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { Canvas } from '@react-three/fiber';
 import * as THREE from 'three';
 import { FACEMESH_TRIANGLES } from '../../data/facemesh_triangles';
 import { useEffect } from 'react';
+import { useState } from 'react';
 
 // Props: landmarksとtextureImgは親コンポーネントから渡す
 export default function FaceMeshViewer({
   landmarks, // [{x, y, z}, ...] in 0〜1 range
   textureImg, // HTMLImageElement or URL
+  isBackgroundImage,
 }: {
   landmarks: { x: number; y: number; z: number }[];
   textureImg: HTMLImageElement | string;
+  isBackgroundImage: boolean;
 }) {
+  const [planeWidth, setPlaneWidth] = useState<number>(-1);
+  const [planeHeight, setPlaneHeight] = useState<number>(-1);
+
   const geometry = useMemo(() => {
     const geo = new THREE.BufferGeometry();
 
@@ -22,6 +28,9 @@ export default function FaceMeshViewer({
 
     const aspect = textureImg.naturalWidth / textureImg.naturalHeight; // アスペクト比
     const scale = 1.0;
+
+    setPlaneWidth(aspect * scale);
+    setPlaneHeight(scale);
 
     for (let i = 0; i < landmarks.length; i++) {
       const { x, y, z } = landmarks[i];
@@ -66,11 +75,24 @@ export default function FaceMeshViewer({
   }, []);
 
   return (
-    <Canvas camera={{ position: [0, 0, 0.8], fov: 45 }}>
-      <ambientLight />
-      <mesh geometry={geometry}>
-        <meshStandardMaterial map={texture} side={THREE.DoubleSide} />
-      </mesh>
-    </Canvas>
+    <>
+      <Canvas camera={{ position: [0, 0, 0.8], fov: 45 }}>
+        <ambientLight />
+
+        {/* 背景用のPlane */}
+        {isBackgroundImage && (
+          <mesh position={[0, 0, -0.01]} scale={[-1, 1, 1]}>
+            <planeGeometry args={[planeWidth, planeHeight]} />
+            <meshBasicMaterial map={texture} />
+          </mesh>
+        )}
+
+        {/* 顔メッシュ */}
+        <mesh geometry={geometry}>
+          <meshStandardMaterial map={texture} side={THREE.DoubleSide} />
+          {/* <meshBasicMaterial map={texture} side={THREE.DoubleSide} /> */}
+        </mesh>
+      </Canvas>
+    </>
   );
 }

@@ -14,6 +14,7 @@ export default function Landmarker() {
   const [faceBlendShapes, setFaceBlendShapes] = useState([]);
   const [landmarks, setLandmarks] = useState([]);
   const [isGuide, setIsGuide] = useState(true);
+  const [isShowBackground, setIsShowBackground] = useState(true);
 
   let faceLandmarker;
 
@@ -25,6 +26,15 @@ export default function Landmarker() {
     const drawingUtils = new DrawingUtils(ctx);
     for (const landmarks of faceLandmarkerResult.faceLandmarks) {
       setLandmarks(landmarks);
+
+      // ★ インデックス番号を描画する処理を追加
+      landmarks.forEach((landmark, index) => {
+        const x = landmark.x * canvasRef.current.width;
+        const y = landmark.y * canvasRef.current.height;
+
+        console.log(x, y, index);
+      });
+
       // シェーダー
       drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_TESSELATION, {
         color: '#C0C0C070',
@@ -120,6 +130,10 @@ export default function Landmarker() {
     }
   };
 
+  const handleShowBackground = () => {
+    setIsShowBackground(!isShowBackground);
+  };
+
   const landmarker = async () => {
     const filesetResolver = await FilesetResolver.forVisionTasks(
       'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm'
@@ -144,21 +158,30 @@ export default function Landmarker() {
           <div className="relative">
             <img src={imageUrl} ref={imageRef} onLoad={handleLoadImage} />
           </div>
-          <div className="mt-4 flex items-center justify-center gap-4">
+          <div className="mt-4 pb-6 flex items-center justify-center gap-4">
             {imageRef.current && (
               <button className="w-1/2" onClick={handleGuide}>
                 ガイド表示／非表示
               </button>
             )}
           </div>
+          <hr />
           {imageRef.current && landmarks.length ? (
-            <div className="h-[50vh]">
-              <FaceMeshViewer
-                key={imageRef.current.src} // 再マウント
-                landmarks={landmarks}
-                textureImg={imageRef.current}
-              />
-            </div>
+            <>
+              <div className="pt-6">
+                <button className="mb-4" onClick={handleShowBackground}>
+                  3Dモデルのみ／3Dモデル＋2D背景画像
+                </button>
+                <div className="h-[50vh] ">
+                  <FaceMeshViewer
+                    key={imageRef.current.src} // 再マウント
+                    landmarks={landmarks}
+                    textureImg={imageRef.current}
+                    isBackgroundImage={isShowBackground}
+                  />
+                </div>
+              </div>
+            </>
           ) : (
             ''
           )}
