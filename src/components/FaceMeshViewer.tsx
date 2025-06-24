@@ -81,14 +81,14 @@ export default function FaceMeshViewer({
 
         {/* 背景用のPlane */}
         {isBackgroundImage && (
-          <mesh position={[0, 0, -0.01]} scale={[-1, 1, 1]}>
+          <mesh position={[0, 0, -0.01]} scale={[-1, 1, 1]} renderOrder={0}>
             <planeGeometry args={[planeWidth, planeHeight]} />
-            <meshBasicMaterial map={texture} />
+            <meshBasicMaterial map={texture} depthWrite={false} />
           </mesh>
         )}
 
         {/* 顔メッシュ */}
-        <mesh geometry={geometry}>
+        <mesh geometry={geometry} renderOrder={1}>
           <meshStandardMaterial map={texture} side={THREE.DoubleSide} />
           {/* <meshBasicMaterial map={texture} side={THREE.DoubleSide} /> */}
         </mesh>
